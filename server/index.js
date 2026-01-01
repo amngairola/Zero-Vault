@@ -26,7 +26,7 @@ app.post("/upload", (req, res) => {
   const newFile = {
     id: Date.now(),
     fileName,
-    encryptedData, // <--- This is the secret sauce. Server stores this.
+    encryptedData,
     uploadDate: new Date().toISOString(),
   };
 

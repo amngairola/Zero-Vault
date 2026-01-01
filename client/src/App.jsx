@@ -31,6 +31,7 @@ export default function App() {
     }
   };
 
+  //UPLOAD
   const handleUpload = async () => {
     const file = fileInputRef.current?.files[0];
     const password = passwordInputRef.current?.value;
@@ -89,26 +90,22 @@ export default function App() {
     };
   };
 
-  const handleDecrypt = useCallback((fileObj) => {
-    const userPass = prompt(`Enter decryption key for: ${fileObj.fileName}`);
+  //DECREPT
+  const handleDecrypt = useCallback((fileObj, userPass) => {
+    // Note: 'userPass' now comes directly from the FileItem input, not prompt()
     if (!userPass) return;
 
     try {
-      console.log("Attempting to decrypt with password:", userPass);
+      console.log("Attempting to decrypt...");
 
       const bytes = CryptoJS.AES.decrypt(fileObj.encryptedData, userPass);
       const originalData = bytes.toString(CryptoJS.enc.Utf8);
 
-      console.log(
-        "Decrypted result (first 50 chars):",
-        originalData.substring(0, 50)
-      );
-
       if (!originalData.startsWith("data:")) {
-        console.error("Decryption produced invalid data. Wrong password?");
         throw new Error("Malformatted data");
       }
 
+      // Download Logic
       const link = document.createElement("a");
       link.href = originalData;
       link.download = fileObj.fileName;
@@ -116,12 +113,11 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
 
-      alert("Success! File downloaded.");
+      // Optional: Show a nice toast instead of alert, but alert works for now
+      alert("Success! File decrypted.");
     } catch (err) {
       console.error(err);
-      alert(
-        "DECRYPTION FAILED: The password was wrong, or this is a corrupt file."
-      );
+      alert("DECRYPTION FAILED: Wrong password!");
     }
   }, []);
 
