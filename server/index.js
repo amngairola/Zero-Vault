@@ -4,7 +4,14 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    // Replace with your ACTUAL Vercel URL (no slash at the end)
+    origin: ["https://zero-vault-red.vercel.app", "http://localhost:5173"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
 app.use(bodyParser.json({ limit: "10mb" })); // Allow large files
 
 // "Database" (Just a JSON file for simplicity)
