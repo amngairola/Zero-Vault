@@ -1,57 +1,61 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const fs = require("fs");
 
 const app = express();
+
+// 1. Configure CORS to allow Vercel & Localhost
 app.use(
   cors({
-    // Replace with your ACTUAL Vercel URL (no slash at the end)
     origin: ["https://zero-vault-red.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST"],
     credentials: true,
   })
 );
-app.use(bodyParser.json({ limit: "10mb" })); // Allow large files
 
-// "Database" (Just a JSON file for simplicity)
-const DB_FILE = "./database.json";
+// 2. Increase limit for large encrypted strings
+app.use(bodyParser.json({ limit: "50mb" }));
 
-// Initialize DB if not exists
-if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, JSON.stringify([]));
-}
+// 3. In-Memory Database (Resets when server restarts)
+// This is perfect for Render Free Tier demos
+let filesDB = [];
 
-// 1. UPLOAD ROUTE (Server only sees encrypted string)
+// ROUTE: Check if server is alive
+app.get("/", (req, res) => {
+  res.send("Zero-Vault API is Running! 🚀");
+});
+
+// ROUTE: Upload File
 app.post("/upload", (req, res) => {
-  const { fileName, encryptedData } = req.body;
+  try {
+    const { fileName, encryptedData } = req.body;
 
-  // Read current DB
-  const db = JSON.parse(fs.readFileSync(DB_FILE));
+    console.log(`[SERVER] Received: ${fileName}`);
 
-  // Save the "Gibberish"
-  const newFile = {
-    id: Date.now(),
-    fileName,
-    encryptedData,
-    uploadDate: new Date().toISOString(),
-  };
+    const newFile = {
+      id: Date.now(),
+      fileName,
+      encryptedData,
+      uploadDate: new Date(),
+    };
 
-  db.push(newFile);
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+    // Save to our array
+    filesDB.push(newFile);
 
-  console.log(`[SERVER] Received encrypted file: ${fileName}`);
-  console.log(
-    `[SERVER] Saved Data snippet: ${encryptedData.substring(0, 50)}...`
-  );
+    console.log(`[SERVER] Saved. Total files: ${filesDB.length}`);
 
-  res.json({ success: true, message: "File stored securely!" });
+    // IMPORTANT: Send success response
+    res.status(200).json({ success: true, message: "File saved!" });
+  } catch (error) {
+    console.error("Upload Error:", error);
+    res.status(500).json({ error: "Server crashed" });
+  }
 });
 
-// 2. LIST FILES ROUTE
+// ROUTE: List Files
 app.get("/files", (req, res) => {
-  const db = JSON.parse(fs.readFileSync(DB_FILE));
-  res.json(db);
+  res.json(filesDB);
 });
 
-app.listen(5000, () => console.log("Server running on port 5000"));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
